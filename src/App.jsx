@@ -1,66 +1,79 @@
-import React, { useState } from 'react';
-import { Download, Loader2, Wand2 } from 'lucide-react';
+import React, { useState } from "react";
+import { Download, Loader2, Wand2 } from "lucide-react";
 
 // Configuration for image parameters
 const IMAGE_PARAMETERS = [
   {
-    id: 'tone',
-    label: 'Tone of Image',
+    id: "tone",
+    label: "Tone of Image",
     options: [
-      { value: 'realistic', label: 'Realistic' },
-      { value: 'artistic', label: 'Artistic' },
-      { value: 'cartoon', label: 'Cartoon' },
-      { value: 'abstract', label: 'Abstract' },
-      { value: 'vintage', label: 'Vintage' }
-    ]
+      { value: "realistic", label: "Realistic" },
+      { value: "artistic", label: "Artistic" },
+      { value: "cartoon", label: "Cartoon" },
+      { value: "abstract", label: "Abstract" },
+      { value: "vintage", label: "Vintage" },
+    ],
   },
   {
-    id: 'style',
-    label: 'Art Style',
+    id: "style",
+    label: "Art Style",
     options: [
-      { value: 'photographic', label: 'Photographic' },
-      { value: 'painting', label: 'Digital Painting' },
-      { value: 'sketch', label: 'Pencil Sketch' },
-      { value: 'watercolor', label: 'Watercolor' },
-      { value: 'oil', label: 'Oil Painting' }
-    ]
+      { value: "photographic", label: "Photographic" },
+      { value: "painting", label: "Digital Painting" },
+      { value: "sketch", label: "Pencil Sketch" },
+      { value: "watercolor", label: "Watercolor" },
+      { value: "oil", label: "Oil Painting" },
+    ],
   },
   {
-    id: 'mood',
-    label: 'Mood',
+    id: "mood",
+    label: "Mood",
     options: [
-      { value: 'bright', label: 'Bright & Cheerful' },
-      { value: 'dark', label: 'Dark & Moody' },
-      { value: 'calm', label: 'Calm & Peaceful' },
-      { value: 'energetic', label: 'Energetic & Dynamic' },
-      { value: 'mysterious', label: 'Mysterious' }
-    ]
+      { value: "bright", label: "Bright & Cheerful" },
+      { value: "dark", label: "Dark & Moody" },
+      { value: "calm", label: "Calm & Peaceful" },
+      { value: "energetic", label: "Energetic & Dynamic" },
+      { value: "mysterious", label: "Mysterious" },
+    ],
   },
   {
-    id: 'quality',
-    label: 'Quality',
+    id: "quality",
+    label: "Quality",
     options: [
-      { value: 'standard', label: 'Standard' },
-      { value: 'high', label: 'High Quality' },
-      { value: 'ultra', label: 'Ultra High' },
-      { value: '4k', label: '4K Resolution' },
-      { value: '8k', label: '8K Resolution' }
-    ]
-  }
+      { value: "standard", label: "Standard" },
+      { value: "high", label: "High Quality" },
+      { value: "ultra", label: "Ultra High" },
+      { value: "4k", label: "4K Resolution" },
+      { value: "8k", label: "8K Resolution" },
+    ],
+  },
 ];
 
 // API functions using fetch
 const optimizePrompt = async (rawPrompt, parameters) => {
   try {
-    const response = await fetch('http://localhost:8000/optimize', {
-      method: 'POST',
+    const getSelectedParametersString = () => {
+      return Object.entries(parameters)
+        .filter(([key, value]) => value)
+        .map(([key, value]) => {
+          const param = IMAGE_PARAMETERS.find((p) => p.id === key);
+          const option = param?.options.find((o) => o.value === value);
+          return option?.label || value;
+        })
+        .join(", ");
+    };
+
+    const paramString = getSelectedParametersString();
+
+    const response = await fetch("http://localhost:8000/optimize", {
+      method: "POST",
       headers: {
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
       },
       body: JSON.stringify({
         prompt: rawPrompt,
-        parameters: parameters
-      })
+        parameters: paramString,
+      }),
     });
 
     if (!response.ok) {
@@ -68,23 +81,24 @@ const optimizePrompt = async (rawPrompt, parameters) => {
     }
 
     const data = await response.json();
-    return data.optimizedPrompts || [];
+    console.log(data.message);
+    return data.message || "None";
   } catch (error) {
-    console.error('Error optimizing prompt:', error);
+    console.error("Error optimizing prompt:", error);
     throw error;
   }
 };
 
 const generateImage = async (optimizedPrompt) => {
   try {
-    const response = await fetch('http://localhost:8000/generate', {
-      method: 'POST',
+    const response = await fetch("http://localhost:8000/generate", {
+      method: "POST",
       headers: {
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        prompt: optimizedPrompt
-      })
+        prompt: optimizedPrompt,
+      }),
     });
 
     if (!response.ok) {
@@ -92,18 +106,27 @@ const generateImage = async (optimizedPrompt) => {
     }
 
     const data = await response.json();
-    return data.imageUrl || '';
+    return data.imageBase64 || "";
   } catch (error) {
-    console.error('Error generating image:', error);
+    console.error("Error generating image:", error);
     throw error;
   }
 };
 
 // Components
-const InputSection = ({ rawPrompt, setRawPrompt, parameters, setParameters, onOptimize, isOptimizing }) => (
+const InputSection = ({
+  rawPrompt,
+  setRawPrompt,
+  parameters,
+  setParameters,
+  onOptimize,
+  isOptimizing,
+}) => (
   <div className="bg-white rounded-lg shadow-md p-6 space-y-6">
-    <h2 className="text-2xl font-bold text-gray-800 text-center">Image Generator with Prompt Optimization</h2>
-    
+    <h2 className="text-2xl font-bold text-gray-800 text-center">
+      Image Generator with Prompt Optimization
+    </h2>
+
     <div>
       <label className="block text-sm font-medium text-gray-700 mb-2">
         Enter the prompt to optimize
@@ -124,8 +147,10 @@ const InputSection = ({ rawPrompt, setRawPrompt, parameters, setParameters, onOp
             {param.label}
           </label>
           <select
-            value={parameters[param.id] || ''}
-            onChange={(e) => setParameters(prev => ({ ...prev, [param.id]: e.target.value }))}
+            value={parameters[param.id] || ""}
+            onChange={(e) =>
+              setParameters((prev) => ({ ...prev, [param.id]: e.target.value }))
+            }
             className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           >
             <option value="">Select {param.label}</option>
@@ -159,35 +184,38 @@ const InputSection = ({ rawPrompt, setRawPrompt, parameters, setParameters, onOp
   </div>
 );
 
-const OptimizedPromptsSection = ({ prompts, onEdit, onSubmit, isGenerating }) => (
-  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-    {prompts.map((prompt, index) => (
-      <div key={index} className="bg-white rounded-lg shadow-md p-6">
-        <h3 className="text-lg font-semibold text-gray-800 mb-4">
-          Editable Optimized Prompt {index + 1}
-        </h3>
-        <textarea
-          value={prompt}
-          onChange={(e) => onEdit(index, e.target.value)}
-          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none mb-4"
-          rows={6}
-        />
-        <button
-          onClick={() => onSubmit(prompt)}
-          disabled={isGenerating}
-          className="w-full bg-green-600 hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white font-medium py-2 px-4 rounded-lg transition-colors duration-200 flex items-center justify-center gap-2"
-        >
-          {isGenerating ? (
-            <>
-              <Loader2 className="w-4 h-4 animate-spin" />
-              Generating...
-            </>
-          ) : (
-            'Select and Submit this Prompt'
-          )}
-        </button>
-      </div>
-    ))}
+const OptimizedPromptsSection = ({
+  prompts,
+  onEdit,
+  onSubmit,
+  isGenerating,
+}) => (
+  <div className="grid grid-cols-1 gap-6">
+    <div className="bg-white rounded-lg shadow-md p-6">
+      <h3 className="text-lg font-semibold text-gray-800 mb-4">
+        Editable Optimized Prompt
+      </h3>
+      <textarea
+        value={prompts}
+        onChange={(e) => onEdit(e.target.value)}
+        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none mb-4"
+        rows={6}
+      />
+      <button
+        onClick={() => onSubmit(prompts)}
+        disabled={isGenerating}
+        className="w-full bg-green-600 hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white font-medium py-2 px-4 rounded-lg transition-colors duration-200 flex items-center justify-center gap-2"
+      >
+        {isGenerating ? (
+          <>
+            <Loader2 className="w-4 h-4 animate-spin" />
+            Generating...
+          </>
+        ) : (
+          "Select and Submit this Prompt"
+        )}
+      </button>
+    </div>
   </div>
 );
 
@@ -202,8 +230,12 @@ const GeneratedImageSection = ({ imageUrl, onSave, onViewInNewTab }) => (
         />
       ) : (
         <div className="text-gray-500 text-center">
-          <p className="text-lg font-medium">Generated Image will appear here</p>
-          <p className="text-sm mt-2">Submit an optimized prompt to generate an image</p>
+          <p className="text-lg font-medium">
+            Generated Image will appear here
+          </p>
+          <p className="text-sm mt-2">
+            Submit an optimized prompt to generate an image
+          </p>
         </div>
       )}
     </div>
@@ -230,10 +262,10 @@ const GeneratedImageSection = ({ imageUrl, onSave, onViewInNewTab }) => (
 
 // Main App Component
 export default function ImageGeneratorApp() {
-  const [rawPrompt, setRawPrompt] = useState('');
-  const [parameters, setParameters] = useState({});
-  const [optimizedPrompts, setOptimizedPrompts] = useState([]);
-  const [generatedImageUrl, setGeneratedImageUrl] = useState('');
+  const [rawPrompt, setRawPrompt] = useState("");
+  const [parameters, setParameters] = useState([]);
+  const [optimizedPrompts, setOptimizedPrompts] = useState("");
+  const [generatedImageUrl, setGeneratedImageUrl] = useState("");
   const [isOptimizing, setIsOptimizing] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
 
@@ -245,17 +277,15 @@ export default function ImageGeneratorApp() {
       const prompts = await optimizePrompt(rawPrompt, parameters);
       setOptimizedPrompts(prompts);
     } catch (error) {
-      console.error('Error optimizing prompts:', error);
-      alert('Failed to optimize prompts. Please try again.');
+      console.error("Error optimizing prompts:", error);
+      alert("Failed to optimize prompts. Please try again.");
     } finally {
       setIsOptimizing(false);
     }
   };
 
-  const handleEditPrompt = (index, newPrompt) => {
-    setOptimizedPrompts(prev => 
-      prev.map((prompt, i) => i === index ? newPrompt : prompt)
-    );
+  const handleEditPrompt = (newPrompt) => {
+    setOptimizedPrompts(newPrompt);
   };
 
   const handleSubmitPrompt = async (selectedPrompt) => {
@@ -266,8 +296,8 @@ export default function ImageGeneratorApp() {
       const imageUrl = await generateImage(selectedPrompt);
       setGeneratedImageUrl(imageUrl);
     } catch (error) {
-      console.error('Error generating image:', error);
-      alert('Failed to generate image. Please try again.');
+      console.error("Error generating image:", error);
+      alert("Failed to generate image. Please try again.");
     } finally {
       setIsGenerating(false);
     }
@@ -275,29 +305,29 @@ export default function ImageGeneratorApp() {
 
   const handleSaveImage = async () => {
     if (!generatedImageUrl) return;
-    
+
     try {
       const response = await fetch(generatedImageUrl);
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
-      
-      const link = document.createElement('a');
+
+      const link = document.createElement("a");
       link.href = url;
       link.download = `generated-image-${Date.now()}.jpg`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
-      
+
       window.URL.revokeObjectURL(url);
     } catch (error) {
-      console.error('Error saving image:', error);
-      alert('Failed to save image. Please try again.');
+      console.error("Error saving image:", error);
+      alert("Failed to save image. Please try again.");
     }
   };
 
   const handleViewInNewTab = () => {
     if (!generatedImageUrl) return;
-    window.open(generatedImageUrl, '_blank');
+    window.open(generatedImageUrl, "_blank");
   };
 
   return (
@@ -312,14 +342,12 @@ export default function ImageGeneratorApp() {
           isOptimizing={isOptimizing}
         />
 
-        {optimizedPrompts.length > 0 && (
-          <OptimizedPromptsSection
-            prompts={optimizedPrompts}
-            onEdit={handleEditPrompt}
-            onSubmit={handleSubmitPrompt}
-            isGenerating={isGenerating}
-          />
-        )}
+        <OptimizedPromptsSection
+          prompts={optimizedPrompts}
+          onEdit={handleEditPrompt}
+          onSubmit={handleSubmitPrompt}
+          isGenerating={isGenerating}
+        />
 
         <GeneratedImageSection
           imageUrl={generatedImageUrl}
